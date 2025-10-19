@@ -19,21 +19,38 @@ app.put('/proxy', async (req, res) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(req.body)
+            body: JSON.stringify(req.body),
+            redirect: 'follow' // Important: follow redirects
         });
         
-        const data = await response.json();
-        console.log('✅ Forwarded to Firebase. Status:', response.status);
+        // Get the response data
+        const responseData = await response.text();
         
-        res.status(response.status).json(data);
+        console.log('✅ Forwarded to Firebase. Status:', response.status);
+        console.log('📨 Response:', responseData);
+        
+        // Send the exact response from Firebase
+        res.status(response.status)
+           .set('Content-Type', 'application/json')
+           .send(responseData);
+           
     } catch (error) {
         console.log('❌ Error:', error.message);
         res.status(500).json({ error: error.message });
     }
 });
 
+// Health check
 app.get('/', (req, res) => {
     res.send('🚀 Firebase Proxy Server is Running!');
+});
+
+// Handle preflight requests
+app.options('/proxy', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'PUT');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.status(200).send();
 });
 
 app.listen(PORT, () => {
